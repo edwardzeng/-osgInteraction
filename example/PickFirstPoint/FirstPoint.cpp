@@ -19,8 +19,7 @@ class CHUD_viewPoint: public osgGA::GUIEventHandler
 {
 public:  
 	/**构造函数*/
-	CHUD_viewPoint(osgText::Text* updateText):
-	  m_text(updateText) {}
+	CHUD_viewPoint(osgText::Text* updateText):m_text(updateText) {}
 	  ~CHUD_viewPoint(){}
 	  virtual bool handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAdapter& aa);
 	  void UpdateText(osgViewer::Viewer* viewer,const osgGA::GUIEventAdapter&);
@@ -36,6 +35,7 @@ protected:
 	osg::Vec2 m_vPosWindowMouse;//鼠标单击处的窗口坐标
 	osg::ref_ptr<osgText::Text>  m_text;//视点信息，会动态改变
 };
+
 bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAdapter& aa)
 {
 	switch(ea.getEventType())
@@ -61,7 +61,10 @@ bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAda
 				//主相机
 				osg::ref_ptr<osg::Camera> cameraMaster = viewer->getCamera();
 				osg::Matrix mvpw = cameraMaster->getViewMatrix() * cameraMaster->getProjectionMatrix();
-				if ( cameraMaster->getViewport()) mvpw.postMult( cameraMaster->getViewport()->computeWindowMatrix());
+				if ( cameraMaster->getViewport()) 
+				{
+					mvpw.postMult( cameraMaster->getViewport()->computeWindowMatrix());
+				}
 				osg::Matrix _inverseMVPW;
 				_inverseMVPW.invert( mvpw);
 				osg::Vec3d nearPoint = osg::Vec3d( ea.getX(), ea.getY(), 0.0)* _inverseMVPW;//透视投影中Znear平面的交点
@@ -94,6 +97,7 @@ bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAda
 				{
 					cout<< "no,line\n";
 				}
+
 				osg::Geode* geode= new osg::Geode();
 				osg::Geometry* pyramidGeometry = new osg::Geometry();
 				geode->addDrawable( pyramidGeometry);
@@ -101,6 +105,7 @@ bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAda
 				pyramidVertices->push_back( nearPoint);
 				pyramidVertices->push_back( farPoint);
 				pyramidGeometry->setVertexArray( pyramidVertices );
+
 				//颜色
 				osg::Vec4Array* colors = new osg::Vec4Array;
 				colors->push_back( osg::Vec4(  1.0f, 0.0f, 0.0f, 1.0f) );//红色
@@ -133,19 +138,23 @@ bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAda
 				{
 					osg::Matrixd mt= computeWorldToLocal( parentNodePaths[ 0]);
 				}
-				////求交
+				//方法一：求交
 				//osg::ref_ptr< osgUtil::LineSegmentIntersector > picker = new osgUtil::LineSegmentIntersector(
 				//  osgUtil::Intersector::WINDOW, ea.getX(), ea.getY());
 				//osgUtil::IntersectionVisitor iv( picker.get());
-				////g_grpMouse->getParent( 0)->getChild( 0)->accept( iv);//模型求交
 				//cameraMaster->accept( iv);//模型求交(从相机往下遍历)
-				//求交
-				osg::ref_ptr< osgUtil::LineSegmentIntersector > picker =new osgUtil::LineSegmentIntersector(
-					nearPoint, farPoint);//线段(真实的世界坐标)
+
+				//方法二：求交
+				osg::ref_ptr< osgUtil::LineSegmentIntersector > picker =new osgUtil::LineSegmentIntersector(nearPoint, farPoint);//线段(真实的世界坐标)
 				osgUtil::IntersectionVisitor iv( picker.get());
-				//g_grpMouse->getParent( 0)->getChild( 0)->accept( iv);//模型求交/**/
-				g_grpMouse->getParent( 0)->getChild( 0)->/*asGroup()->getChild( 0)->*/accept( iv);//模型求交/**/
-				//               根节点     cow的MT节点
+				//g_grpMouse->getParent( 0)->getChild( 0)->asGroup()->getChild( 0)->accept( iv);//模型求交/**/
+				g_grpMouse->getParent( 0)->getChild( 0)->accept( iv);//模型求交/**/
+
+				////方法三：求交
+				//osgUtil::LineSegmentIntersector::Intersections intersections;
+				//bool isContainsIntersections=viewer->computeIntersections( ea.getX(), ea.getY(), intersections);
+
+				// 最前交点，方法一：              根节点     cow的MT节点
 				//cameraMaster->accept( iv);//模型求交(从相机往下遍历)
 				//if (picker->containsIntersections())
 				//{
@@ -185,6 +194,23 @@ bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAda
 				//    
 				//  }
 				//}
+
+				////求最前交点，方法二：如果包含交叉点，则在第一个交点处显示一个蓝色的球
+				//if(isContainsIntersections)
+				//{
+				//	osg::Vec3 ptWorldIntersectPointFirst;
+				//	osgUtil::LineSegmentIntersector::Intersections::iterator iter=intersections.begin();
+				//	ptWorldIntersectPointFirst.set(iter->getWorldIntersectPoint().x(),iter->getWorldIntersectPoint().y(),iter->getWorldIntersectPoint().z());
+				//	//osg::Vec3 ptWorldIntersectPointFirst= picker->getFirstIntersection().getWorldIntersectPoint();
+				//	cout<<"world coords vertex("<< ptWorldIntersectPointFirst.x()<<","
+				//		<< ptWorldIntersectPointFirst.y()<< ","<< ptWorldIntersectPointFirst.z()<<")"<< std::endl;
+				//	//高亮此点              
+				//	double dPointRadius= 15.0f;
+				//	osg::ShapeDrawable* pShd= new osg::ShapeDrawable(new osg::Sphere( ptWorldIntersectPointFirst, dPointRadius));
+				//	pShd->setColor( osg::Vec4( 0, 0, 1, 1));
+				//	geode->addDrawable(pShd);
+				//}
+				//求最前交点，方法三：如果包含交叉点，则在第一个交点处显示一个蓝色的球
 				if (picker->containsIntersections())
 				{
 					osg::Vec3 ptWorldIntersectPointFirst= picker->getFirstIntersection().getWorldIntersectPoint();
@@ -192,9 +218,8 @@ bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAda
 						<< ptWorldIntersectPointFirst.y()<< ","<< ptWorldIntersectPointFirst.z()<<")"<< std::endl;
 					//高亮此点              
 					double dPointRadius= 15.0f;
-					osg::ShapeDrawable* pShd= new osg::ShapeDrawable(
-						new osg::Sphere( ptWorldIntersectPointFirst, dPointRadius));
-					pShd->setColor( osg::Vec4( 0, 1, 0, 1));
+					osg::ShapeDrawable* pShd= new osg::ShapeDrawable(new osg::Sphere( ptWorldIntersectPointFirst, dPointRadius));
+					pShd->setColor( osg::Vec4( 0, 0, 1, 1));
 					geode->addDrawable( pShd);
 				}
 			}
@@ -293,7 +318,7 @@ int main( int argc, char **argv )
 	//设置状态
 	osg::StateSet* stateset = g_grpMouse->getOrCreateStateSet(); 
 	stateset->setMode( GL_LIGHTING,osg::StateAttribute::OFF);//关闭灯光
-	stateset->setMode( GL_DEPTH_TEST,osg::StateAttribute::OFF);//关闭深度测试
+	stateset->setMode( GL_DEPTH_TEST,osg::StateAttribute::ON);//打开深度测试，否则指示的交点处的球会无法遮挡，总是看见，浮现
 	root->addChild( g_grpMouse.get());
 
 	//viewer.setUpViewInWindow( 100, 50, 600, 600);//设置窗口大小，实现与createGraphicsWindow类似的效果

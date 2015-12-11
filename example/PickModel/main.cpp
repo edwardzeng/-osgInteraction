@@ -23,6 +23,7 @@ int main()
 	root->addChild(myCow);
 	root->addChild(cowScript);
 	myViewer->setSceneData(root);
+	myViewer->setUpViewInWindow(300,100,800,600);
 	myViewer->addEventHandler(new CPick(myViewer));
 	myViewer->run();
 }
