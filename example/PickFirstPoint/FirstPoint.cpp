@@ -144,15 +144,15 @@ bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAda
 				//osgUtil::IntersectionVisitor iv( picker.get());
 				//cameraMaster->accept( iv);//模型求交(从相机往下遍历)
 
-				//方法二：求交
-				osg::ref_ptr< osgUtil::LineSegmentIntersector > picker =new osgUtil::LineSegmentIntersector(nearPoint, farPoint);//线段(真实的世界坐标)
-				osgUtil::IntersectionVisitor iv( picker.get());
-				//g_grpMouse->getParent( 0)->getChild( 0)->asGroup()->getChild( 0)->accept( iv);//模型求交/**/
-				g_grpMouse->getParent( 0)->getChild( 0)->accept( iv);//模型求交/**/
+				////方法二：求交
+				//osg::ref_ptr< osgUtil::LineSegmentIntersector > picker =new osgUtil::LineSegmentIntersector(nearPoint, farPoint);//线段(真实的世界坐标)
+				//osgUtil::IntersectionVisitor iv( picker.get());
+				////g_grpMouse->getParent( 0)->getChild( 0)->asGroup()->getChild( 0)->accept( iv);//模型求交/**/
+				//g_grpMouse->getParent( 0)->getChild( 0)->accept( iv);//模型求交/**/
 
-				////方法三：求交
-				//osgUtil::LineSegmentIntersector::Intersections intersections;
-				//bool isContainsIntersections=viewer->computeIntersections( ea.getX(), ea.getY(), intersections);
+				//方法三：求交
+				osgUtil::LineSegmentIntersector::Intersections intersections;
+				bool isContainsIntersections=viewer->computeIntersections( ea.getX(), ea.getY(), intersections);
 
 				// 最前交点，方法一：              根节点     cow的MT节点
 				//cameraMaster->accept( iv);//模型求交(从相机往下遍历)
@@ -195,33 +195,33 @@ bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAda
 				//  }
 				//}
 
-				////求最前交点，方法二：如果包含交叉点，则在第一个交点处显示一个蓝色的球
-				//if(isContainsIntersections)
+				//求最前交点，方法二：如果包含交叉点，则在第一个交点处显示一个蓝色的球
+				if(isContainsIntersections)
+				{
+					osg::Vec3 ptWorldIntersectPointFirst;
+					osgUtil::LineSegmentIntersector::Intersections::iterator iter=intersections.begin();
+					ptWorldIntersectPointFirst.set(iter->getWorldIntersectPoint().x(),iter->getWorldIntersectPoint().y(),iter->getWorldIntersectPoint().z());
+					//osg::Vec3 ptWorldIntersectPointFirst= picker->getFirstIntersection().getWorldIntersectPoint();
+					cout<<"world coords vertex("<< ptWorldIntersectPointFirst.x()<<","
+						<< ptWorldIntersectPointFirst.y()<< ","<< ptWorldIntersectPointFirst.z()<<")"<< std::endl;
+					//高亮此点              
+					double dPointRadius= 150.0f;
+					osg::ShapeDrawable* pShd= new osg::ShapeDrawable(new osg::Sphere( ptWorldIntersectPointFirst, dPointRadius));
+					pShd->setColor( osg::Vec4( 0, 0, 1, 1));
+					geode->addDrawable(pShd);
+				}
+				////求最前交点，方法三：如果包含交叉点，则在第一个交点处显示一个蓝色的球
+				//if (picker->containsIntersections())
 				//{
-				//	osg::Vec3 ptWorldIntersectPointFirst;
-				//	osgUtil::LineSegmentIntersector::Intersections::iterator iter=intersections.begin();
-				//	ptWorldIntersectPointFirst.set(iter->getWorldIntersectPoint().x(),iter->getWorldIntersectPoint().y(),iter->getWorldIntersectPoint().z());
-				//	//osg::Vec3 ptWorldIntersectPointFirst= picker->getFirstIntersection().getWorldIntersectPoint();
+				//	osg::Vec3 ptWorldIntersectPointFirst= picker->getFirstIntersection().getWorldIntersectPoint();
 				//	cout<<"world coords vertex("<< ptWorldIntersectPointFirst.x()<<","
 				//		<< ptWorldIntersectPointFirst.y()<< ","<< ptWorldIntersectPointFirst.z()<<")"<< std::endl;
 				//	//高亮此点              
 				//	double dPointRadius= 15.0f;
 				//	osg::ShapeDrawable* pShd= new osg::ShapeDrawable(new osg::Sphere( ptWorldIntersectPointFirst, dPointRadius));
 				//	pShd->setColor( osg::Vec4( 0, 0, 1, 1));
-				//	geode->addDrawable(pShd);
+				//	geode->addDrawable( pShd);
 				//}
-				//求最前交点，方法三：如果包含交叉点，则在第一个交点处显示一个蓝色的球
-				if (picker->containsIntersections())
-				{
-					osg::Vec3 ptWorldIntersectPointFirst= picker->getFirstIntersection().getWorldIntersectPoint();
-					cout<<"world coords vertex("<< ptWorldIntersectPointFirst.x()<<","
-						<< ptWorldIntersectPointFirst.y()<< ","<< ptWorldIntersectPointFirst.z()<<")"<< std::endl;
-					//高亮此点              
-					double dPointRadius= 15.0f;
-					osg::ShapeDrawable* pShd= new osg::ShapeDrawable(new osg::Sphere( ptWorldIntersectPointFirst, dPointRadius));
-					pShd->setColor( osg::Vec4( 0, 0, 1, 1));
-					geode->addDrawable( pShd);
-				}
 			}
 			return true;
 		}
@@ -302,7 +302,8 @@ int main( int argc, char **argv )
 	osgViewer::Viewer viewer; 
 	osg::ref_ptr<osg::Group> root= new osg::Group; 
 
-	osg::ref_ptr< osg::Node> model = osgDB::readNodeFile("F:/3rdpart/OSG/OpenSceneGraph/data/fountain.osgt");// glider nathan
+	//osg::ref_ptr< osg::Node> model = osgDB::readNodeFile("F:/3rdpart/OSG/OpenSceneGraph/data/fountain.osgt");// glider nathan
+	osg::ref_ptr< osg::Node> model = osgDB::readNodeFile("E:/SourceCode/OSG/OSGData/Robot/right/car.ive");
 	osg::ref_ptr< osg::MatrixTransform> pmt= new osg::MatrixTransform();
 	pmt->addChild( model.get());
 	root->addChild( pmt.get());//加入某个模型

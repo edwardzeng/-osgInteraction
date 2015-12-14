@@ -56,11 +56,13 @@ public:
 		  return false;
 	  }
 	  //对象选取事件处理器
-	  void pick(osg::ref_ptr<osgViewer::View> view, float x, float y)
+	  void PickHandler::pick(osg::ref_ptr<osgViewer::View> view, float x, float y)
 	  {
-		  osg::ref_ptr<osg::Node> node;
+		  osg::ref_ptr<osg::Node> clickedNode;
 		  osg::ref_ptr<osg::Node> node3;
-		  osg::ref_ptr<osg::Group> parent;
+		  osg::ref_ptr<osg::Group> clickedNodeParent;
+		  std::string clickedNodeName;
+
 		  //创建一个线段交集检测函数
 		  osgUtil::LineSegmentIntersector::Intersections intersections;
 		  if (view->computeIntersections(x, y, intersections))
@@ -68,54 +70,71 @@ public:
 			  osgUtil::LineSegmentIntersector::Intersections::iterator it = intersections.begin();
 			  const osg::NodePath& nodePath = it->nodePath;
 
-			  if (!it->nodePath.empty()&&!(it->nodePath.back()->getName().empty()))
+			  if ( !it->nodePath.empty() && !(it->nodePath.back()->getName().empty()) && nodePath.size()>=3)
 			  {
 				  //const osg::NodePath & nodePath= it->nodePath;
 				  for (int i=0;i<nodePath.size();i++)
 				  {
 					  osg::Node* nd=dynamic_cast<osg::Node*>(nodePath[i]);
-					  if (nd->getName()=="cow.osg")
+					  std::string nodeName=nd->getName();
+					  std::string name;
+					  int length=nodeName.size();
+					  if (length>=4)
 					  {
-						  std::cout<<"found arm1.ive"<<std::endl;
+						  for (int j=0;j<4;++j)
+						  {
+							  name +=nodeName[length-4+j];
+						  }
+
+						  if (name==".ive")
+						  {
+							  clickedNodeName=nodeName;
+							  std::cout<<"get the clicked node: "<<clickedNodeName<<std::endl;
+							  clickedNode =nd;
+							  clickedNodeParent = dynamic_cast<osg::Group*>(nodePath[i-1]);
+						  }
 					  }
 					  std::cout<<"node"<<i<<":"<<nd->getName()<<std::endl;
 				  }
 				  std::cout<<"-------------------- "<<std::endl<<std::endl;
 			  }
-
-
-			  //得到选择的物体
-			  node = (nodePath.size()>=1)?nodePath[2]:0;
-			  node3 = (nodePath.size()>=4)?nodePath[3]:0;
-			  parent = (nodePath.size()>=2)?dynamic_cast<osg::Group*>(nodePath[1]):0;
+			  else
+			  {
+				  clickedNode=0;
+				  clickedNodeParent=0;
+			  }
 		  }       
 		  //用一种高亮显示来显示物体已经被选中
-		  if (parent.get() && node.get())
+		  if (clickedNodeParent.get() && clickedNode.get())
 		  {
 			  bool isSelectSameNode=false;
 			  if (_lastSelectNode)
 			  {
-				  if ((_lastSelectNode ==node) || (_lastSelectNode ==node3))
-				  {
-					  isSelectSameNode=true;
-				  }
-				  else
+				  if (_lastSelectNodeName !=clickedNodeName)
 				  {
 					  //如果选择其他物体，则移除高亮显示的对象
 					  _lastSelectParent->replaceChild(_lastScribe,_lastSelectNode);
 					  _lastSelectNode=0;
 				  }
+				  else
+				  {
+					  isSelectSameNode=true;
+				  }
 			  }
+
 			  if (!isSelectSameNode)
 			  {
 				  //如果对象选择到，高亮显示
-				  _lastSelectNode=node;
-				  _lastSelectParent=parent;
+				  _lastSelectNode=clickedNode;
+				  _lastSelectParent=clickedNodeParent;
+				  _lastSelectNodeName=clickedNode->getName();
+
 				  osg::ref_ptr<osgFX::Scribe> scribe = new osgFX::Scribe();
-				  scribe->addChild(node.get());
-				  scribe->setName("scribe node");
+				  scribe->addChild(clickedNode.get());
+				  std::string scribeName="scribe "+clickedNode->getName();
+				  scribe->setName(scribeName);
 				  _lastScribe=scribe;
-				  parent->replaceChild(node.get(),scribe.get());
+				  clickedNodeParent->replaceChild(clickedNode.get(),scribe.get());
 			  }
 		  }
 	  }
@@ -123,9 +142,10 @@ public:
 	//得到鼠标的位置
 	float _mx ;
 	float _my;
-	osg::ref_ptr<osg::Node> _lastSelectNode;
-	osg::ref_ptr<osg::Group> _lastSelectParent;
-	osg::ref_ptr<osgFX::Scribe> _lastScribe;
+	osg::Node* _lastSelectNode;
+	osg::Group* _lastSelectParent;
+	osgFX::Scribe* _lastScribe;
+	std::string _lastSelectNodeName;
 };
 int main()
 {
