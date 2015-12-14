@@ -111,18 +111,24 @@ bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAda
 				colors->push_back( osg::Vec4(  1.0f, 0.0f, 0.0f, 1.0f) );//红色
 				pyramidGeometry->setColorArray( colors);
 				pyramidGeometry->setColorBinding( osg::Geometry::BIND_OVERALL);
+
+
 				//红点表示透视投影中Znear平面的交点
 				pyramidGeometry->addPrimitiveSet(  new osg::DrawArrays( osg::PrimitiveSet::POINTS, 0, 1/*3*/));
 				//红线表示鼠标点击的线，其起点为Znear平面交点，终点为Zfar平面交点。
 				pyramidGeometry->addPrimitiveSet(  new osg::DrawArrays( osg::PrimitiveSet::LINES, 0, 2));/**/
-				////设置线宽
-				//osg::ref_ptr <osg::LineWidth> LineSize = new osg::LineWidth;
-				//LineSize ->setWidth( 12.0) ;      
-				//geode->getOrCreateStateSet()->setAttributeAndModes( LineSize.get (),osg::StateAttribute::ON);
+
+
+				//设置线宽
+				osg::ref_ptr <osg::LineWidth> LineSize = new osg::LineWidth;
+				LineSize ->setWidth( 5.0) ;      
+				geode->getOrCreateStateSet()->setAttributeAndModes( LineSize.get (),osg::StateAttribute::ON);
 				//设置点大小
 				osg::ref_ptr <osg::Point> ptSize = new osg::Point;
-				ptSize->setSize( 12.0) ;      
-				geode->getOrCreateStateSet()->setAttributeAndModes( ptSize.get (),osg::StateAttribute::ON);          
+				ptSize->setSize( 20.0) ;      
+				geode->getOrCreateStateSet()->setAttributeAndModes( ptSize.get(),osg::StateAttribute::ON);
+
+
 				/*当只有一个点时，包围球半径为，所以可能看不到这个点，故需要重新设置包围球大小，可把包围球半径设大点。
 				如对glider、cow等小模型，半径取.1可以，对fountain.osg则.1太小。为统一，可大些，如*/
 				osg::Vec3d ptCnt= geode->getBound().center();
@@ -130,14 +136,18 @@ bool CHUD_viewPoint::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAda
 				//重新设置包围球的半径（可调用setInitialBound()）
 				osg::BoundingSphere bs( ptCnt, 100);
 				geode->setInitialBound( bs);
+
 				g_grpMouse->removeChildren( 0, g_grpMouse->getNumChildren());
 				g_grpMouse->addChild( geode);
+
 				//获取从根节点到当前节点的路径向量
 				osg::NodePathList parentNodePaths = geode->getParentalNodePaths();
 				if ( !parentNodePaths.empty())
 				{
 					osg::Matrixd mt= computeWorldToLocal( parentNodePaths[ 0]);
 				}
+
+
 				//方法一：求交
 				//osg::ref_ptr< osgUtil::LineSegmentIntersector > picker = new osgUtil::LineSegmentIntersector(
 				//  osgUtil::Intersector::WINDOW, ea.getX(), ea.getY());
